@@ -1,0 +1,11 @@
+ffinfo
+======
+
+ffinfo prints information about a video file to standard output. It
+parses output from ffmpeg's ffprobe and displays the relevant
+information in a compact manner.
+
+ffinfo requires ffprobe [1] from ffmpeg [2].
+
+ [1] http://www.ffmpeg.org/ffprobe.html
+ [2] http://www.ffmpeg.org/
