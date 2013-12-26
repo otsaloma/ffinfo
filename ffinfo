@@ -22,6 +22,7 @@ Print compact information about a video file to standard output.
 Requires ffprobe from ffmpeg.
 """
 
+import locale
 import os
 import subprocess
 import sys
@@ -154,10 +155,11 @@ def read_output(command, dst):
     """Read output from `command` to `dst`."""
     process = subprocess.Popen(command,
                                stderr=subprocess.PIPE,
-                               stdout=subprocess.PIPE,
-                               universal_newlines=True)
+                               stdout=subprocess.PIPE)
 
     output = process.communicate()[0]
+    encoding = locale.getpreferredencoding(do_setlocale=False)
+    output = output.decode(encoding, errors="replace")
     for line in output.splitlines():
         if line.startswith("["):
             if not line.startswith("[/"):
