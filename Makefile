@@ -1,8 +1,9 @@
 # -*- coding: us-ascii-unix -*-
-prefix = /usr/local
+
+DESTDIR =
+PREFIX  = /usr/local
+bindir  = $(DESTDIR)$(PREFIX)/bin
 
 install:
-	cp -v ffinfo $(prefix)/bin
-
-uninstall:
-	rm -fv $(prefix)/bin/ffinfo
+	mkdir -p $(bindir)
+	cp ffinfo $(bindir)
