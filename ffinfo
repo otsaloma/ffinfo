@@ -55,6 +55,12 @@ def calculate_bitrates():
         if entry["bit_rate_fuzzy"]:
             entry["bit_rate"] = str(int(total - known))
 
+def calculate_display_aspect_ratio(width, height, ratio):
+    """Return display width, height that matches `ratio`."""
+    dw = int(2 * round(max(width, ratio*height)/2))
+    dh = int(2 * round(max(height, width/ratio)/2))
+    return dw, dh
+
 def comma_print(x):
     """Print `x` with a leading comma."""
     return print0("; {}".format(x))
@@ -65,15 +71,15 @@ def main(path):
     read_output(("ffprobe", "-show_streams", path), streams)
     calculate_bitrates()
     print_general(path)
-    print_video(path)
-    print_audio(path)
-    print_subtitles(path)
+    print_video()
+    print_audio()
+    print_subtitles()
 
 def print0(x):
     """Print `x` without a trailing newline."""
     return print(x, end="")
 
-def print_audio(path):
+def print_audio():
     """Print audio track information."""
     astreams = [x for x in streams if x["codec_type"] == "audio"]
     for i, entry in enumerate(astreams):
@@ -110,7 +116,7 @@ def print_general(path):
         comma_print("{:.0f} kbps".format(bitrate))
         print0("\n")
 
-def print_subtitles(path):
+def print_subtitles():
     """Print subtitle track information."""
     sstreams = [x for x in streams if x["codec_type"] == "subtitle"]
     for i, entry in enumerate(sstreams):
@@ -124,7 +130,7 @@ def print_subtitles(path):
                 comma_print(entry["TAG:language"])
         print0("\n")
 
-def print_video(path):
+def print_video():
     """Print video track information."""
     vstreams = [x for x in streams if x["codec_type"] == "video"]
     for i, entry in enumerate(vstreams):
@@ -140,11 +146,13 @@ def print_video(path):
             if entry["bit_rate_fuzzy"]:
                 bitrate = "~" + bitrate
             comma_print(bitrate)
+        width, height = map(int, (entry["width"], entry["height"]))
         ratio = split_field(entry["display_aspect_ratio"], ":", int)
-        resolution = ("{:d}x{:d} @ dar {:.2f}"
-                      .format(int(entry["width"]),
-                              int(entry["height"]),
-                              ratio[0]/ratio[1]))
+        ratio = ratio[0] / ratio[1]
+        dw, dh = calculate_display_aspect_ratio(width, height, ratio)
+        resolution = ("{:d}x{:d}{}".format(
+            width, height, (" → {:d}x{:d}".format(dw, dh)
+                            if dw != width or dh != height else "")))
 
         comma_print(resolution)
         framerate = split_field(entry["r_frame_rate"], "/", int)
@@ -179,7 +187,7 @@ def split_field(value, separator, fun=None):
     """Split `value` by `separator` and apply `fun`."""
     value = value.split(separator, 2)
     if fun is not None:
-        value = [fun(x) for x in value]
+        value = list(map(fun, value))
     return value
 
 
