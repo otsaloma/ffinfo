@@ -7,7 +7,7 @@ information in a compact manner, e.g.
 
     eben_moglen_freedom_in_the_cloud.m4v
     mov,mp4,m4a,3gp,3g2,mj2; 407 MB; 00:57:10; 995 kbps
-    Video: avc1; 832 kbps; 640x352 @ dar 1.82; 29.970 fps
+    Video: avc1; 832 kbps; 640x352; 29.970 fps
     Audio: mp4a; 160 kbps; 2 channels
 
 ffinfo requires [ffprobe][1] from [ffmpeg][2].
