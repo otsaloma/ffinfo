@@ -10,7 +10,7 @@ information in a compact manner, e.g.
     Video: avc1; 832 kbps; 640x352 @ dar 1.82; 29.970 fps
     Audio: mp4a; 160 kbps; 2 channels
 
-ffinfo requires ffprobe [1] from ffmpeg [2].
+ffinfo requires [ffprobe][1] from [ffmpeg][2].
 
- [1] http://www.ffmpeg.org/ffprobe.html
- [2] http://www.ffmpeg.org/
+ [1]: http://www.ffmpeg.org/ffprobe.html
+ [2]: http://www.ffmpeg.org/
