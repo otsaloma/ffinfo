@@ -12,5 +12,5 @@ information in a compact manner, e.g.
 
 ffinfo requires [ffprobe][1] from [ffmpeg][2].
 
- [1]: http://www.ffmpeg.org/ffprobe.html
- [2]: http://www.ffmpeg.org/
+[1]: http://www.ffmpeg.org/ffprobe.html
+[2]: http://www.ffmpeg.org/
