@@ -2,8 +2,10 @@
 
 DESTDIR =
 PREFIX  = /usr/local
-bindir  = $(DESTDIR)$(PREFIX)/bin
+BINDIR  = $(DESTDIR)$(PREFIX)/bin
 
 install:
-	mkdir -p $(bindir)
-	cp ffinfo $(bindir)
+	mkdir -p $(BINDIR)
+	cp ffinfo $(BINDIR)
+
+.PHONY: install
