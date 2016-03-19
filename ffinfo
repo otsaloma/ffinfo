@@ -57,6 +57,8 @@ def calculate_bitrates():
 
 def calculate_display_aspect_ratio(width, height, ratio):
     """Return display width, height that matches `ratio`."""
+    if ratio == 0:
+        return width, height
     dw = int(2 * round(max(width, ratio*height)/2))
     dh = int(2 * round(max(height, width/ratio)/2))
     return dw, dh
@@ -88,6 +90,9 @@ def print_audio():
         if format.find("[0]") > -1:
             format = entry["codec_name"]
         print0(format)
+        if "TAG:language" in entry:
+            if entry["TAG:language"] != "und":
+                comma_print(entry["TAG:language"])
         bitrate = entry["bit_rate"]
         if bitrate != "N/A":
             bitrate = float(bitrate) / 1000
@@ -98,9 +103,6 @@ def print_audio():
         channels = "{} channels".format(entry["channels"])
         channels = channels.replace("1 channels", "1 channel")
         comma_print(channels)
-        if "TAG:language" in entry:
-            if entry["TAG:language"] != "und":
-                comma_print(entry["TAG:language"])
         print0("\n")
 
 def print_general(path):
@@ -108,8 +110,13 @@ def print_general(path):
     print(os.path.basename(path))
     for entry in container:
         print0(entry["format_name"])
-        size = os.stat(path)[6] / 1024**2
-        comma_print("{:.0f} MB".format(size))
+        size = os.stat(path)[6]
+        if size > 1024**3:
+            size = size / 1024**3
+            comma_print("{:.2f} GB".format(size))
+        else:
+            size = size / 1024**2
+            comma_print("{:.0f} MB".format(size))
         duration = float(entry["duration"])
         comma_print(seconds_to_time(duration))
         bitrate = float(entry["bit_rate"]) / 1000
@@ -139,6 +146,17 @@ def print_video():
         if format.find("[0]") > -1:
             format = entry["codec_name"]
         print0(format)
+        width, height = map(int, (entry["width"], entry["height"]))
+        ratio = split_field(entry["display_aspect_ratio"], ":", int)
+        ratio = ratio[0] / ratio[1]
+        dw, dh = calculate_display_aspect_ratio(width, height, ratio)
+        resolution = "{:d}x{:d}".format(width, height)
+        if dw != width or dh != height:
+            resolution += " → {:d}x{:d}".format(dw, dh)
+        resolution += " ({:.2f}:1)".format(dw/dh)
+        comma_print(resolution)
+        framerate = split_field(entry["r_frame_rate"], "/", int)
+        comma_print("{:.3f} fps".format(framerate[0]/framerate[1]))
         bitrate = entry["bit_rate"]
         if bitrate != "N/A":
             bitrate = float(bitrate) / 1000
@@ -146,17 +164,16 @@ def print_video():
             if entry["bit_rate_fuzzy"]:
                 bitrate = "~" + bitrate
             comma_print(bitrate)
-        width, height = map(int, (entry["width"], entry["height"]))
-        ratio = split_field(entry["display_aspect_ratio"], ":", int)
-        ratio = ratio[0] / ratio[1]
-        dw, dh = calculate_display_aspect_ratio(width, height, ratio)
-        resolution = ("{:d}x{:d}{}".format(
-            width, height, (" → {:d}x{:d}".format(dw, dh)
-                            if dw != width or dh != height else "")))
-
-        comma_print(resolution)
-        framerate = split_field(entry["r_frame_rate"], "/", int)
-        comma_print("{:.3f} fps".format(framerate[0]/framerate[1]))
+        bitrate = entry["bit_rate"]
+        if bitrate != "N/A":
+            bitrate = float(bitrate)
+            framerate = split_field(entry["r_frame_rate"], "/", int)
+            framerate = framerate[0] / framerate[1]
+            bpp = bitrate / (width * height * framerate)
+            bpp = "{:.3f} bpp".format(bpp)
+            if entry["bit_rate_fuzzy"]:
+                bpp = "~" + bpp
+            comma_print(bpp)
         print0("\n")
 
 def read_output(command, dst):
