@@ -22,9 +22,7 @@ Print compact information about a video file to standard output.
 Requires ffprobe from ffmpeg.
 """
 
-import locale
 import os
-import subprocess
 import sys
 
 container = []
@@ -178,13 +176,9 @@ def print_video():
 
 def read_output(command, dst):
     """Read output from `command` to `dst`."""
-    process = subprocess.Popen(command,
-                               stderr=subprocess.PIPE,
-                               stdout=subprocess.PIPE)
-
-    output = process.communicate()[0]
-    encoding = locale.getpreferredencoding(do_setlocale=False)
-    output = output.decode(encoding, errors="replace")
+    from subprocess import run, PIPE, DEVNULL
+    output = run(command, stdout=PIPE, stderr=DEVNULL).stdout
+    output = output.decode("utf_8", errors="replace")
     for line in output.splitlines():
         if line.startswith("["):
             if not line.startswith("[/"):
@@ -195,17 +189,12 @@ def read_output(command, dst):
 
 def seconds_to_time(seconds):
     """Convert `seconds` to a time string."""
-    return ("{:02.0f}:{:02.0f}:{:02.0f}"
-            .format(seconds // 3600,
-                    (seconds % 3600) // 60,
-                    seconds % 60))
+    return "{:02.0f}:{:02.0f}:{:02.0f}".format(
+        seconds // 3600, (seconds % 3600) // 60, seconds % 60)
 
-def split_field(value, separator, fun=None):
+def split_field(value, separator, fun=lambda x: x):
     """Split `value` by `separator` and apply `fun`."""
-    value = value.split(separator, 2)
-    if fun is not None:
-        value = list(map(fun, value))
-    return value
+    return list(map(fun, value.split(separator, 2)))
 
 
 if __name__ == "__main__":
