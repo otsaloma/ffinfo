@@ -10,6 +10,12 @@ information in a compact manner, e.g.
     Video: avc1; 640x352 (1.82:1); 29.970 fps; 832 kbps; 0.123 bpp
     Audio: mp4a; 160 kbps; 2 channels
 
+To install, run
+
+```bash
+make PREFIX=... install
+```
+
 ffinfo requires [ffprobe][1] from [ffmpeg][2].
 
 [1]: https://www.ffmpeg.org/ffprobe.html
