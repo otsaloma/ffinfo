@@ -13,7 +13,7 @@ information in a compact manner, e.g.
 To install, run
 
 ```bash
-make PREFIX=... install
+make PREFIX=/usr/local install
 ```
 
 ffinfo requires [ffprobe][1] from [ffmpeg][2].
