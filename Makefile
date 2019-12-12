@@ -6,7 +6,7 @@ BINDIR  = $(DESTDIR)$(PREFIX)/bin
 
 install:
 	mkdir -p $(BINDIR)
-	cp ffinfo $(BINDIR)
+	cp -f ffinfo $(BINDIR)
 	chmod +x $(BINDIR)/ffinfo
 
 .PHONY: install
