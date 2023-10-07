@@ -21,7 +21,6 @@ import sys
 container = []
 streams = []
 
-
 def calculate_bitrates():
     # If ffprobe fails to detect the bitrate of just one track, we can
     # calculate that by subtracting bitrates of known tracks from the total
@@ -173,7 +172,6 @@ def seconds_to_time(seconds):
 
 def split_field(value, separator, fun=lambda x: x):
     return list(map(fun, value.split(separator, 2)))
-
 
 if __name__ == "__main__":
     if not sys.argv[1:]:
