@@ -125,13 +125,15 @@ def print_video():
             format = entry["codec_name"]
         print0(format)
         width, height = map(int, (entry["width"], entry["height"]))
-        ratio = split_field(entry["display_aspect_ratio"], ":", int)
-        ratio = ratio[0] / ratio[1]
-        dw, dh = calculate_display_aspect_ratio(width, height, ratio)
         resolution = "{:d}x{:d}".format(width, height)
-        if dw != width or dh != height:
-            resolution += " → {:d}x{:d}".format(dw, dh)
-        resolution += " ({:.2f}:1)".format(dw/dh)
+        dar = entry["display_aspect_ratio"]
+        if dar != "N/A":
+            ratio = split_field(dar, ":", int)
+            ratio = ratio[0] / ratio[1]
+            dw, dh = calculate_display_aspect_ratio(width, height, ratio)
+            if dw != width or dh != height:
+                resolution += " → {:d}x{:d}".format(dw, dh)
+            resolution += " ({:.2f}:1)".format(dw/dh)
         comma_print(resolution)
         framerate = split_field(entry["r_frame_rate"], "/", int)
         comma_print("{:.3f} fps".format(framerate[0]/framerate[1]))
