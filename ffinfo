@@ -76,8 +76,8 @@ def print_audio(stream):
     if "bit_rate" in stream:
         bitrate = float(stream["bit_rate"])
         prefix = "~" if stream["bit_rate_fuzzy"] else ""
-        fields.append("{}{:.0f} kbps".format(prefix, bitrate / 1000))
-    channels = "{} channels".format(stream["channels"])
+        fields.append(f"{prefix}{bitrate / 1000:.0f} kbps")
+    channels = f"{stream['channels']} channels"
     channels = channels.replace("1 channels", "1 channel")
     fields.append(channels)
     print("Audio:", "; ".join(fields))
@@ -87,15 +87,11 @@ def print_general(path, container):
     fields = [container["format_name"]]
     size = os.path.getsize(path)
     if size > 1024**3:
-        size = size / 1024**3
-        fields.append("{:.2f} GB".format(size))
+        fields.append(f"{size / 1024**3:.2f} GB")
     else:
-        size = size / 1024**2
-        fields.append("{:.0f} MB".format(size))
-    duration = float(container["duration"])
-    fields.append(seconds_to_time(duration))
-    bitrate = float(container["bit_rate"]) / 1000
-    fields.append("{:.0f} kbps".format(bitrate))
+        fields.append(f"{size / 1024**2:.0f} MB")
+    fields.append(seconds_to_time(float(container["duration"])))
+    fields.append(f"{float(container['bit_rate']) / 1000:.0f} kbps")
     print("; ".join(fields))
 
 def print_subtitles(stream):
@@ -105,23 +101,23 @@ def print_subtitles(stream):
 def print_video(stream):
     fields = [format_codec(stream)]
     width, height = stream["width"], stream["height"]
-    resolution = "{:d}x{:d}".format(width, height)
+    resolution = f"{width}x{height}"
     if "display_aspect_ratio" in stream:
         ratio = stream["display_aspect_ratio"].replace(":", "/")
         ratio = float(Fraction(ratio))
         dw, dh = calculate_display_size(width, height, ratio)
         if dw != width or dh != height:
-            resolution += " → {:d}x{:d}".format(dw, dh)
-        resolution += " ({:.2f}:1)".format(dw/dh)
+            resolution += f" → {dw}x{dh}"
+        resolution += f" ({dw / dh:.2f}:1)"
     fields.append(resolution)
     framerate = float(Fraction(stream["r_frame_rate"]))
-    fields.append("{:.3f} fps".format(framerate))
+    fields.append(f"{framerate:.3f} fps")
     if "bit_rate" in stream:
         bitrate = float(stream["bit_rate"])
         bpp = bitrate / (width * height * framerate)
         prefix = "~" if stream["bit_rate_fuzzy"] else ""
-        fields.append("{}{:.0f} kbps".format(prefix, bitrate / 1000))
-        fields.append("{}{:.3f} bpp".format(prefix, bpp))
+        fields.append(f"{prefix}{bitrate / 1000:.0f} kbps")
+        fields.append(f"{prefix}{bpp:.3f} bpp")
     print("Video:", "; ".join(fields))
 
 def seconds_to_time(seconds):
