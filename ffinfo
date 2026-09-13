@@ -45,9 +45,6 @@ def calculate_display_size(width, height, ratio):
     dh = int(2 * round(max(height, width / ratio) / 2))
     return dw, dh
 
-def comma_print(x):
-    return print0("; {}".format(x))
-
 def main(path):
     command = ("ffprobe", "-v", "error", "-of", "json",
                "-show_format", "-show_streams", path)
@@ -69,62 +66,56 @@ def main(path):
     for stream in subtitles:
         print_subtitles(stream)
 
-def print0(x):
-    return print(x, end="")
-
 def print_audio(stream):
-    print0("Audio: ")
     format = stream["codec_tag_string"].lower()
     if format.find("[0]") > -1:
         format = stream["codec_name"]
-    print0(format)
+    fields = [format]
     language = stream.get("tags", {}).get("language", "und")
     if language != "und":
-        comma_print(language)
+        fields.append(language)
     if "bit_rate" in stream:
         bitrate = float(stream["bit_rate"]) / 1000
         bitrate = "{:.0f} kbps".format(bitrate)
         if stream["bit_rate_fuzzy"]:
             bitrate = "~" + bitrate
-        comma_print(bitrate)
+        fields.append(bitrate)
     channels = "{} channels".format(stream["channels"])
     channels = channels.replace("1 channels", "1 channel")
-    comma_print(channels)
-    print0("\n")
+    fields.append(channels)
+    print("Audio:", "; ".join(fields))
 
 def print_general(path, container):
     print(os.path.basename(path))
-    print0(container["format_name"])
+    fields = [container["format_name"]]
     size = os.stat(path)[6]
     if size > 1024**3:
         size = size / 1024**3
-        comma_print("{:.2f} GB".format(size))
+        fields.append("{:.2f} GB".format(size))
     else:
         size = size / 1024**2
-        comma_print("{:.0f} MB".format(size))
+        fields.append("{:.0f} MB".format(size))
     duration = float(container["duration"])
-    comma_print(seconds_to_time(duration))
+    fields.append(seconds_to_time(duration))
     bitrate = float(container["bit_rate"]) / 1000
-    comma_print("{:.0f} kbps".format(bitrate))
-    print0("\n")
+    fields.append("{:.0f} kbps".format(bitrate))
+    print("; ".join(fields))
 
 def print_subtitles(stream):
-    print0("Subtitles: ")
     format = stream["codec_tag_string"].lower()
     if format.find("[0]") > -1:
         format = stream["codec_name"]
-    print0(format)
+    fields = [format]
     language = stream.get("tags", {}).get("language", "und")
     if language != "und":
-        comma_print(language)
-    print0("\n")
+        fields.append(language)
+    print("Subtitles:", "; ".join(fields))
 
 def print_video(stream):
-    print0("Video: ")
     format = stream["codec_tag_string"].lower()
     if format.find("[0]") > -1:
         format = stream["codec_name"]
-    print0(format)
+    fields = [format]
     width, height = stream["width"], stream["height"]
     resolution = "{:d}x{:d}".format(width, height)
     if "display_aspect_ratio" in stream:
@@ -134,15 +125,15 @@ def print_video(stream):
         if dw != width or dh != height:
             resolution += " → {:d}x{:d}".format(dw, dh)
         resolution += " ({:.2f}:1)".format(dw/dh)
-    comma_print(resolution)
+    fields.append(resolution)
     framerate = split_field(stream["r_frame_rate"], "/", int)
-    comma_print("{:.3f} fps".format(framerate[0]/framerate[1]))
+    fields.append("{:.3f} fps".format(framerate[0]/framerate[1]))
     if "bit_rate" in stream:
         bitrate = float(stream["bit_rate"]) / 1000
         bitrate = "{:.0f} kbps".format(bitrate)
         if stream["bit_rate_fuzzy"]:
             bitrate = "~" + bitrate
-        comma_print(bitrate)
+        fields.append(bitrate)
     if "bit_rate" in stream:
         bitrate = float(stream["bit_rate"])
         framerate = split_field(stream["r_frame_rate"], "/", int)
@@ -151,8 +142,8 @@ def print_video(stream):
         bpp = "{:.3f} bpp".format(bpp)
         if stream["bit_rate_fuzzy"]:
             bpp = "~" + bpp
-        comma_print(bpp)
-    print0("\n")
+        fields.append(bpp)
+    print("Video:", "; ".join(fields))
 
 def seconds_to_time(seconds):
     return "{:02.0f}:{:02.0f}:{:02.0f}".format(
