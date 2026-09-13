@@ -1,5 +1,4 @@
-ffinfo
-======
+# ffinfo
 
 ffinfo prints information about a video file to standard output. It
 parses output from ffmpeg's ffprobe and displays the relevant

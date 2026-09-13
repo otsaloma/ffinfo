@@ -41,7 +41,7 @@ def calculate_bitrates():
         if entry["bit_rate_fuzzy"]:
             entry["bit_rate"] = str(int(total - known))
 
-def calculate_display_aspect_ratio(width, height, ratio):
+def calculate_display_size(width, height, ratio):
     if ratio == 0:
         return width, height
     dw = int(2 * round(max(width, ratio * height) / 2))
@@ -130,7 +130,7 @@ def print_video():
         if dar != "N/A":
             ratio = split_field(dar, ":", int)
             ratio = ratio[0] / ratio[1]
-            dw, dh = calculate_display_aspect_ratio(width, height, ratio)
+            dw, dh = calculate_display_size(width, height, ratio)
             if dw != width or dh != height:
                 resolution += " → {:d}x{:d}".format(dw, dh)
             resolution += " ({:.2f}:1)".format(dw/dh)
