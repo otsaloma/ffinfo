@@ -20,6 +20,8 @@ import os
 import subprocess
 import sys
 
+from fractions import Fraction
+
 def calculate_display_size(width, height, ratio):
     if ratio == 0:
         return width, height
@@ -83,7 +85,7 @@ def print_audio(stream):
 def print_general(path, container):
     print(os.path.basename(path))
     fields = [container["format_name"]]
-    size = os.stat(path)[6]
+    size = os.path.getsize(path)
     if size > 1024**3:
         size = size / 1024**3
         fields.append("{:.2f} GB".format(size))
@@ -105,15 +107,14 @@ def print_video(stream):
     width, height = stream["width"], stream["height"]
     resolution = "{:d}x{:d}".format(width, height)
     if "display_aspect_ratio" in stream:
-        ratio = split_field(stream["display_aspect_ratio"], ":", int)
-        ratio = ratio[0] / ratio[1]
+        ratio = stream["display_aspect_ratio"].replace(":", "/")
+        ratio = float(Fraction(ratio))
         dw, dh = calculate_display_size(width, height, ratio)
         if dw != width or dh != height:
             resolution += " → {:d}x{:d}".format(dw, dh)
         resolution += " ({:.2f}:1)".format(dw/dh)
     fields.append(resolution)
-    framerate = split_field(stream["r_frame_rate"], "/", int)
-    framerate = framerate[0] / framerate[1]
+    framerate = float(Fraction(stream["r_frame_rate"]))
     fields.append("{:.3f} fps".format(framerate))
     if "bit_rate" in stream:
         bitrate = float(stream["bit_rate"])
@@ -126,9 +127,6 @@ def print_video(stream):
 def seconds_to_time(seconds):
     return "{:02.0f}:{:02.0f}:{:02.0f}".format(
         seconds // 3600, (seconds % 3600) // 60, seconds % 60)
-
-def split_field(value, separator, fun=lambda x: x):
-    return list(map(fun, value.split(separator, 2)))
 
 if __name__ == "__main__":
     if not sys.argv[1:]:
