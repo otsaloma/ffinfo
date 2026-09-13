@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import os
+import subprocess
 import sys
 
 def calculate_bitrates(container, streams):
@@ -27,7 +29,7 @@ def calculate_bitrates(container, streams):
     total = float(container["bit_rate"])
     known = 0
     for stream in streams:
-        stream["bit_rate_fuzzy"] = (stream["bit_rate"] == "N/A")
+        stream["bit_rate_fuzzy"] = "bit_rate" not in stream
         if not stream["bit_rate_fuzzy"]:
             known += float(stream["bit_rate"])
     nmissing = sum(x["bit_rate_fuzzy"] for x in streams)
@@ -47,8 +49,14 @@ def comma_print(x):
     return print0("; {}".format(x))
 
 def main(path):
-    container = read_output(("ffprobe", "-show_format", path))[0]
-    streams = read_output(("ffprobe", "-show_streams", path))
+    command = ("ffprobe", "-v", "error", "-of", "json",
+               "-show_format", "-show_streams", path)
+    result = subprocess.run(command, stdout=subprocess.PIPE)
+    if result.returncode != 0:
+        raise SystemExit(result.returncode)
+    probe = json.loads(result.stdout)
+    container = probe["format"]
+    streams = probe["streams"]
     video = [x for x in streams if x.get("codec_type") == "video"]
     audio = [x for x in streams if x.get("codec_type") == "audio"]
     subtitles = [x for x in streams if x.get("codec_type") == "subtitle"]
@@ -70,12 +78,11 @@ def print_audio(stream):
     if format.find("[0]") > -1:
         format = stream["codec_name"]
     print0(format)
-    if "TAG:language" in stream:
-        if stream["TAG:language"] != "und":
-            comma_print(stream["TAG:language"])
-    bitrate = stream["bit_rate"]
-    if bitrate != "N/A":
-        bitrate = float(bitrate) / 1000
+    language = stream.get("tags", {}).get("language", "und")
+    if language != "und":
+        comma_print(language)
+    if "bit_rate" in stream:
+        bitrate = float(stream["bit_rate"]) / 1000
         bitrate = "{:.0f} kbps".format(bitrate)
         if stream["bit_rate_fuzzy"]:
             bitrate = "~" + bitrate
@@ -107,9 +114,9 @@ def print_subtitles(stream):
     if format.find("[0]") > -1:
         format = stream["codec_name"]
     print0(format)
-    if "TAG:language" in stream:
-        if stream["TAG:language"] != "und":
-            comma_print(stream["TAG:language"])
+    language = stream.get("tags", {}).get("language", "und")
+    if language != "und":
+        comma_print(language)
     print0("\n")
 
 def print_video(stream):
@@ -118,11 +125,10 @@ def print_video(stream):
     if format.find("[0]") > -1:
         format = stream["codec_name"]
     print0(format)
-    width, height = map(int, (stream["width"], stream["height"]))
+    width, height = stream["width"], stream["height"]
     resolution = "{:d}x{:d}".format(width, height)
-    dar = stream["display_aspect_ratio"]
-    if dar != "N/A":
-        ratio = split_field(dar, ":", int)
+    if "display_aspect_ratio" in stream:
+        ratio = split_field(stream["display_aspect_ratio"], ":", int)
         ratio = ratio[0] / ratio[1]
         dw, dh = calculate_display_size(width, height, ratio)
         if dw != width or dh != height:
@@ -131,16 +137,14 @@ def print_video(stream):
     comma_print(resolution)
     framerate = split_field(stream["r_frame_rate"], "/", int)
     comma_print("{:.3f} fps".format(framerate[0]/framerate[1]))
-    bitrate = stream["bit_rate"]
-    if bitrate != "N/A":
-        bitrate = float(bitrate) / 1000
+    if "bit_rate" in stream:
+        bitrate = float(stream["bit_rate"]) / 1000
         bitrate = "{:.0f} kbps".format(bitrate)
         if stream["bit_rate_fuzzy"]:
             bitrate = "~" + bitrate
         comma_print(bitrate)
-    bitrate = stream["bit_rate"]
-    if bitrate != "N/A":
-        bitrate = float(bitrate)
+    if "bit_rate" in stream:
+        bitrate = float(stream["bit_rate"])
         framerate = split_field(stream["r_frame_rate"], "/", int)
         framerate = framerate[0] / framerate[1]
         bpp = bitrate / (width * height * framerate)
@@ -149,20 +153,6 @@ def print_video(stream):
             bpp = "~" + bpp
         comma_print(bpp)
     print0("\n")
-
-def read_output(command):
-    from subprocess import run, PIPE, DEVNULL
-    output = run(command, stdout=PIPE, stderr=DEVNULL).stdout
-    output = output.decode("utf_8", errors="replace")
-    sections = []
-    for line in output.splitlines():
-        if line.startswith("["):
-            if not line.startswith("[/"):
-                sections.append({})
-        elif "=" in line:
-            field, value = line.split("=", 1)
-            sections[-1][field] = value
-    return sections
 
 def seconds_to_time(seconds):
     return "{:02.0f}:{:02.0f}:{:02.0f}".format(
