@@ -20,30 +20,25 @@ import os
 import subprocess
 import sys
 
-def calculate_bitrates(container, streams):
-    # If ffprobe fails to detect the bitrate of just one track, we can
-    # calculate that by subtracting bitrates of known tracks from the total
-    # bitrate of the whole file. Considering only audio and video tracks, there
-    # will be a small error since the space used by subtitles and the container
-    # metadata are not accounted for.
-    total = float(container["bit_rate"])
-    known = 0
-    for stream in streams:
-        stream["bit_rate_fuzzy"] = "bit_rate" not in stream
-        if not stream["bit_rate_fuzzy"]:
-            known += float(stream["bit_rate"])
-    nmissing = sum(x["bit_rate_fuzzy"] for x in streams)
-    if nmissing > 1: return
-    for stream in streams:
-        if stream["bit_rate_fuzzy"]:
-            stream["bit_rate"] = str(int(total - known))
-
 def calculate_display_size(width, height, ratio):
     if ratio == 0:
         return width, height
     dw = int(2 * round(max(width, ratio * height) / 2))
     dh = int(2 * round(max(height, width / ratio) / 2))
     return dw, dh
+
+def estimate_missing_bitrate(container, streams):
+    # If ffprobe fails to detect the bitrate of just one track, we can
+    # calculate that by subtracting bitrates of known tracks from the total
+    # bitrate of the whole file. Considering only audio and video tracks, there
+    # will be a small error since the space used by subtitles and the container
+    # metadata are not accounted for.
+    for stream in streams:
+        stream["bit_rate_fuzzy"] = "bit_rate" not in stream
+    missing = [x for x in streams if x["bit_rate_fuzzy"]]
+    if len(missing) != 1: return
+    known = sum(float(x["bit_rate"]) for x in streams if "bit_rate" in x)
+    missing[0]["bit_rate"] = str(int(float(container["bit_rate"]) - known))
 
 def format_codec(stream):
     tag = stream["codec_tag_string"].lower()
@@ -65,7 +60,7 @@ def main(path):
     video = [x for x in streams if x.get("codec_type") == "video"]
     audio = [x for x in streams if x.get("codec_type") == "audio"]
     subtitles = [x for x in streams if x.get("codec_type") == "subtitle"]
-    calculate_bitrates(container, audio + video)
+    estimate_missing_bitrate(container, audio + video)
     print_general(path, container)
     for stream in video:
         print_video(stream)
