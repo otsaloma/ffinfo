@@ -45,6 +45,14 @@ def calculate_display_size(width, height, ratio):
     dh = int(2 * round(max(height, width / ratio) / 2))
     return dw, dh
 
+def format_codec(stream):
+    tag = stream["codec_tag_string"].lower()
+    return stream["codec_name"] if "[0]" in tag else tag
+
+def format_language(stream):
+    language = stream.get("tags", {}).get("language", "und")
+    return [] if language == "und" else [language]
+
 def main(path):
     command = ("ffprobe", "-v", "error", "-of", "json",
                "-show_format", "-show_streams", path)
@@ -67,19 +75,11 @@ def main(path):
         print_subtitles(stream)
 
 def print_audio(stream):
-    format = stream["codec_tag_string"].lower()
-    if format.find("[0]") > -1:
-        format = stream["codec_name"]
-    fields = [format]
-    language = stream.get("tags", {}).get("language", "und")
-    if language != "und":
-        fields.append(language)
+    fields = [format_codec(stream), *format_language(stream)]
     if "bit_rate" in stream:
-        bitrate = float(stream["bit_rate"]) / 1000
-        bitrate = "{:.0f} kbps".format(bitrate)
-        if stream["bit_rate_fuzzy"]:
-            bitrate = "~" + bitrate
-        fields.append(bitrate)
+        bitrate = float(stream["bit_rate"])
+        prefix = "~" if stream["bit_rate_fuzzy"] else ""
+        fields.append("{}{:.0f} kbps".format(prefix, bitrate / 1000))
     channels = "{} channels".format(stream["channels"])
     channels = channels.replace("1 channels", "1 channel")
     fields.append(channels)
@@ -102,20 +102,11 @@ def print_general(path, container):
     print("; ".join(fields))
 
 def print_subtitles(stream):
-    format = stream["codec_tag_string"].lower()
-    if format.find("[0]") > -1:
-        format = stream["codec_name"]
-    fields = [format]
-    language = stream.get("tags", {}).get("language", "und")
-    if language != "und":
-        fields.append(language)
+    fields = [format_codec(stream), *format_language(stream)]
     print("Subtitles:", "; ".join(fields))
 
 def print_video(stream):
-    format = stream["codec_tag_string"].lower()
-    if format.find("[0]") > -1:
-        format = stream["codec_name"]
-    fields = [format]
+    fields = [format_codec(stream)]
     width, height = stream["width"], stream["height"]
     resolution = "{:d}x{:d}".format(width, height)
     if "display_aspect_ratio" in stream:
@@ -127,22 +118,14 @@ def print_video(stream):
         resolution += " ({:.2f}:1)".format(dw/dh)
     fields.append(resolution)
     framerate = split_field(stream["r_frame_rate"], "/", int)
-    fields.append("{:.3f} fps".format(framerate[0]/framerate[1]))
-    if "bit_rate" in stream:
-        bitrate = float(stream["bit_rate"]) / 1000
-        bitrate = "{:.0f} kbps".format(bitrate)
-        if stream["bit_rate_fuzzy"]:
-            bitrate = "~" + bitrate
-        fields.append(bitrate)
+    framerate = framerate[0] / framerate[1]
+    fields.append("{:.3f} fps".format(framerate))
     if "bit_rate" in stream:
         bitrate = float(stream["bit_rate"])
-        framerate = split_field(stream["r_frame_rate"], "/", int)
-        framerate = framerate[0] / framerate[1]
         bpp = bitrate / (width * height * framerate)
-        bpp = "{:.3f} bpp".format(bpp)
-        if stream["bit_rate_fuzzy"]:
-            bpp = "~" + bpp
-        fields.append(bpp)
+        prefix = "~" if stream["bit_rate_fuzzy"] else ""
+        fields.append("{}{:.0f} kbps".format(prefix, bitrate / 1000))
+        fields.append("{}{:.3f} bpp".format(prefix, bpp))
     print("Video:", "; ".join(fields))
 
 def seconds_to_time(seconds):
